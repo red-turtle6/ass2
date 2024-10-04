@@ -20,7 +20,18 @@ data[cols_to_convert] = data[cols_to_convert].apply(pd.to_numeric, errors='coerc
 sdata = data.sort_values(by='LGA')
 
 #here the data is grouped, use sum for number of people and mean for percentages
-gdata = sdata.groupby('LGA').agg( 
-    Degree=("Holds degree or higher, persons",'sum'),
-    DegreeP=("Holds degree or higher, %", 'mean'),
-)
+gdata = sdata.groupby('LGA').sum().reset_index()
+gdata['LGA'] = gdata['LGA'].str.replace(r'\s*\(.*\)', '', regex=True).str.strip()
+
+for year in range(2014, 2024):
+    gdata[f'{year} Offence Count'] = None
+    sgrouped = grouped[grouped['Year'] == year]
+
+    for index, row in gdata.iterrows():
+        lga = row['LGA']
+        offence_count = sgrouped.loc[sgrouped['Local Government Area'] == lga, 'Offence Count']
+        if not offence_count.empty:
+            gdata.at[index, f'{year} Offence Count'] = offence_count.values[0]
+
+print(gdata.info())
+
